@@ -2,19 +2,25 @@ package org.example;
 import javax.swing.JPanel;
 import javax.swing.Timer;
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 
-public class LifePanel extends JPanel{
-
-    int xPanel = 1100;
-    int yPanel = 800;
+public class LifePanel extends JPanel implements ActionListener {
+    int xPanel;
+    int yPanel;
     int size = 10;
-    boolean[][] life = new boolean[xPanel / size][yPanel / size];
+    int[][] life = new int [xPanel/size][yPanel/size];
+    int [][] beforeLife =  new int[xPanel/size][yPanel/size];
     boolean starts = true;
 
-    public LifePanel() {
-        setSize(xPanel , yPanel);
+    public LifePanel(int width, int height) {
+        xPanel = width;
+        yPanel = height;
+        life = new int[xPanel / size][yPanel / size];
+        setSize(xPanel, yPanel);
         setLayout(null);
 
+        new Timer (80 , this).start();
     }
 
     public void paintComponent(Graphics g) {
@@ -29,7 +35,7 @@ public class LifePanel extends JPanel{
 
     private void grid (Graphics g){
         for (int i = 0; i < life.length; i++) {
-            g.drawLine( 0, i * size, xPanel , i* size ); // linha
+            g.drawLine( 0, i * size, xPanel , i * size ); // linha
             g.drawLine(i * size, 0 , i * size, yPanel); // coluna
         }
     }
@@ -39,7 +45,7 @@ public class LifePanel extends JPanel{
             for (int x = 0; x < life.length; x++){
                 for (int y = 0; y < (yPanel / size ); y++){
                     if ((int)(Math.random() * 10) == 0){
-                        life[x][y] = true;
+                        beforeLife[x][y] = 1;
                     }
                 }
 
@@ -50,9 +56,10 @@ public class LifePanel extends JPanel{
 
     private void display (Graphics g){
         g.setColor(Color.GREEN);
+        copyArray();
         for (int x = 0; x < life.length; x++){
             for (int y = 0; y < (yPanel / size ); y++){
-                if (life[x][y]){
+                if (life[x][y] == 1){
                     g.fillRect(x * size , y * size , size, size);
                 }
             }
@@ -60,4 +67,50 @@ public class LifePanel extends JPanel{
         }
     }
 
+    private void copyArray(){
+        for (int x = 0; x < life.length; x++){
+            for (int y = 0; y < (yPanel / size ); y++){
+               life[x][y] = beforeLife[x][y];
+            }
+
+        }
+    }
+
+    private int check(int x , int y){
+        int alive = 0;
+        alive += life[x - 1][y - 1];
+        alive += life[x][y - 1];
+        alive += life[x + 1][y - 1];
+        alive += life[x - 1][y];
+        alive += life[x + 1][y];
+        alive += life[x - 1][y + 1];
+        alive += life[x][y + 1];
+        alive += life[x + 1][y + 1];
+
+        return alive;
+    }
+
+    public void actionPerformed (ActionEvent e){
+        int alive;
+        for (int x = 0; x < life.length; x++){
+            for (int y = 0; y < (yPanel / size ); y++){
+                alive = check(x, y);
+
+            if (alive == 3){
+                beforeLife[x][y] = 1;
+            }
+            else if( alive == 2 && life[x][y] == 1) {
+                beforeLife[x][y] = 1;
+            }
+            else {
+                beforeLife[x][y] = 0;
+            }
+
+
+            }
+        }
+
+
+        repaint();
+    }
 }
