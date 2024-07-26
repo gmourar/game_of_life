@@ -1,6 +1,6 @@
 package org.example;
-import javax.swing.JPanel;
-import javax.swing.Timer;
+
+import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -8,12 +8,13 @@ import java.awt.event.ActionListener;
 public class LifePanel extends JPanel implements ActionListener {
     int xPanel;
     int yPanel;
-    int size = 10;
+    int size = 10; // Tamanho de cada célula
     int xWidth;
     int yHeight;
     int[][] life;
     int[][] beforeLife;
     boolean starts = true;
+    Timer timer;
 
     public LifePanel(int width, int height) {
         xPanel = width;
@@ -25,29 +26,39 @@ public class LifePanel extends JPanel implements ActionListener {
         setSize(xPanel, yPanel);
         setLayout(null);
 
-        new Timer(80, this).start();
+        // Inicializa o timer com intervalo de 80ms
+        timer = new Timer(80, this);
+        timer.start();
     }
 
-    public void paintComponent(Graphics g) {
+    @Override
+    protected void paintComponent(Graphics g) {
         super.paintComponent(g);
         setBackground(Color.DARK_GRAY);
         g.setColor(Color.BLACK);
 
+        // Desenha a grade
         grid(g);
-        spawn(g);
+
+        // Preenche o array inicial se for a primeira execução
+        spawn();
+
+        // Exibe as células
         display(g);
     }
 
+    // Desenha a grade no painel
     private void grid(Graphics g) {
         for (int i = 0; i <= xWidth; i++) {
-            g.drawLine(i * size, 0, i * size, yPanel); // coluna
+            g.drawLine(i * size, 0, i * size, yPanel);
         }
         for (int i = 0; i <= yHeight; i++) {
-            g.drawLine(0, i * size, xPanel, i * size); // linha
+            g.drawLine(0, i * size, xPanel, i * size);
         }
     }
 
-    private void spawn(Graphics g) {
+    // Popula o array inicial com células vivas aleatórias
+    private void spawn() {
         if (starts) {
             for (int x = 0; x < xWidth; x++) {
                 for (int y = 0; y < yHeight; y++) {
@@ -60,18 +71,20 @@ public class LifePanel extends JPanel implements ActionListener {
         }
     }
 
+    // Exibe as células no painel
     private void display(Graphics g) {
-        g.setColor(Color.GREEN);
         copyArray();
         for (int x = 0; x < xWidth; x++) {
             for (int y = 0; y < yHeight; y++) {
                 if (life[x][y] == 1) {
+                    g.setColor(Color.GREEN); // Células vivas normais
                     g.fillRect(x * size, y * size, size, size);
                 }
             }
         }
     }
 
+    // Copia o estado atual das células para a matriz de "antes"
     private void copyArray() {
         for (int x = 0; x < xWidth; x++) {
             for (int y = 0; y < yHeight; y++) {
@@ -80,21 +93,27 @@ public class LifePanel extends JPanel implements ActionListener {
         }
     }
 
+    // Verifica o número de vizinhos vivos ao redor de uma célula
     private int check(int x, int y) {
         int alive = 0;
 
-        alive += life[(x + xWidth - 1) % xWidth][(y + yHeight - 1) % yHeight];
-        alive += life[(x + xWidth) % xWidth][(y + yHeight - 1) % yHeight];
-        alive += life[(x + xWidth + 1) % xWidth][(y + yHeight - 1) % yHeight];
-        alive += life[(x + xWidth - 1) % xWidth][(y + yHeight) % yHeight];
-        alive += life[(x + xWidth + 1) % xWidth][(y + yHeight) % yHeight];
-        alive += life[(x + xWidth - 1) % xWidth][(y + yHeight + 1) % yHeight];
-        alive += life[(x + xWidth) % xWidth][(y + yHeight + 1) % yHeight];
-        alive += life[(x + xWidth + 1) % xWidth][(y + yHeight + 1) % yHeight];
+        // Considera os vizinhos ao redor (com wrapping de borda)
+        int[] neighbors = {-1, 0, 1};
+        for (int dx : neighbors) {
+            for (int dy : neighbors) {
+                if (dx != 0 || dy != 0) {
+                    int nx = (x + dx + xWidth) % xWidth;
+                    int ny = (y + dy + yHeight) % yHeight;
+                    alive += life[nx][ny];
+                }
+            }
+        }
 
         return alive;
     }
 
+    // Atualiza o estado das células com base nas regras do jogo
+    @Override
     public void actionPerformed(ActionEvent e) {
         int alive;
         for (int x = 0; x < xWidth; x++) {
@@ -102,14 +121,52 @@ public class LifePanel extends JPanel implements ActionListener {
                 alive = check(x, y);
 
                 if (alive == 3) {
-                    beforeLife[x][y] = 1;
+                    beforeLife[x][y] = 1; // Célula nasce
                 } else if (alive == 2 && life[x][y] == 1) {
-                    beforeLife[x][y] = 1;
+                    beforeLife[x][y] = 1; // Célula sobrevive
                 } else {
-                    beforeLife[x][y] = 0;
+                    beforeLife[x][y] = 0; // Célula morre
                 }
             }
         }
         repaint();
+    }
+
+    // Inicia a simulação
+    public void start() {
+        starts = true;
+        timer.start();
+    }
+
+    // Pausa a simulação
+    public void pause() {
+        timer.stop();
+    }
+
+    // Reinicia a simulação
+    public void restart() {
+        starts = true;
+        for (int x = 0; x < xWidth; x++) {
+            for (int y = 0; y < yHeight; y++) {
+                life[x][y] = 0;
+                beforeLife[x][y] = 0;
+            }
+        }
+        timer.start();
+    }
+
+    // Define a velocidade da simulação
+    public void setSpeed(int delay) {
+        timer.setDelay(delay);
+    }
+
+    // Altera o tamanho das células
+    public void setSize(int newSize) {
+        size = newSize;
+        xWidth = xPanel / size;
+        yHeight = yPanel / size;
+        life = new int[xWidth][yHeight];
+        beforeLife = new int[xWidth][yHeight];
+        starts = true;
     }
 }
